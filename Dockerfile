@@ -1,20 +1,11 @@
-# Build stage
-
-FROM golang:1.18 AS BuildStage
+# Dockerfile
+FROM node:10.15.2
 
 WORKDIR /app
 
-COPY . .
+COPY . /app
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o app main.go
+RUN npm install
 
-# Deploy Stage
-FROM alpine:3
-
-RUN apk update
-RUN apk upgrade
-RUN apk add --no-cache ffmpeg
-
-COPY --from=BuildStage /app .
-
-CMD ["./app"]
+EXPOSE 5001
+CMD npm start
