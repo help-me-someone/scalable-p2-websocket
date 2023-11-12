@@ -1,6 +1,7 @@
-import { createServer } from "http";
-import { Server } from "socket.io";
+import { createServer } from "http"; import { Server } from "socket.io";
 import { createClient } from 'redis';
+import { createConnection } from 'mysql2';
+
 
 // Set up redis client.
 const redisClient = createClient();
@@ -14,17 +15,37 @@ const io = new Server(httpServer, {
     },
  });
 
-var viewCountFromDatabase = 5;
+async function getMySQLConnection() {
+  var mySqlClient = createConnection({
+    host: "localhost",
+    user: "user",
+    password: "password",
+    database: "toktik-db"
+  });
 
+  mySqlClient.connect(function(err) {
+    if (err) throw err;
+  });
+
+  return mySqlClient;
+}
+
+async function getViewCount(videoKey) {
+  const connection = await getMySQLConnection();
+  const sql = 'SELECT videos.views FROM videos WHERE videos.key = ?';
+  const results = await connection.promise().query(sql, [videoKey])
+  return results[0][0].views;  
+}
+
+// Run this when a user needs to be subscribed to a video.
 async function handleVideo(socket, info) {
   socket.join(info.video+'room');
-  viewCountFromDatabase++;
+
+  // Serve the view count.
   handleVideoViewCount(info);
 }
 
 async function handleVideoViewCount(info) {
-  console.log("Handling get new view count");
-  
   // Data expiry time. 
   // After the interval, the value will get updated.
   const expiryTime = 5;
@@ -32,13 +53,11 @@ async function handleVideoViewCount(info) {
   // Check whether there is a value cached in the redis.
   const videoKey = info.video+'key';
   var value = await redisClient.get(videoKey);
+  
   if (value == null) {
-    await redisClient.set(videoKey, viewCountFromDatabase, { EX: expiryTime });
-    console.log('Setting a value on the redis cache from db, value');
+    const viewCountFromDatabase = await getViewCount(info.video);
+    await redisClient.set(videoKey, viewCountFromDatabase, { EX: expiryTime * 2 });
     value = viewCountFromDatabase;
-  }
-  else {
-    console.log('Got value from cache');
   }
   
   io.to(info.video+'room').emit("update", value);

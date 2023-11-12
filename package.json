@@ -11,6 +11,7 @@
   "dependencies": {
     "@socket.io/sticky": "^1.0.0",
     "mysql": "^2.18.1",
+    "mysql2": "^3.6.3",
     "redis": "^4.6.10",
     "socket.io": "4.6.0"
   },
