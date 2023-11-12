@@ -60,7 +60,7 @@ async function handleVideoViewCount(info) {
     value = viewCountFromDatabase;
   }
   
-  io.to(info.video+'room').emit("update", value);
+  io.to(info.video+'room').emit("update", { 'room':info.video, 'value':value });
 }
 
 io.on("connection", (socket) => {
