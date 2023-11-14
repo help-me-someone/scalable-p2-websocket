@@ -54,7 +54,7 @@ async function getVideoComments(videoID) {
   const connection = await getMySQLConnection();
 
   // // Get the like count.
-  const sql = 'SELECT * FROM video_comments WHERE video_comments.video_id = ? ORDER BY video_comments.date DESC';
+  const sql = 'SELECT * FROM video_comments WHERE video_comments.video_id = ? ORDER BY video_comments.date ASC';
   const results = await connection.promise().query(sql, [videoID])
   connection.end();
  
