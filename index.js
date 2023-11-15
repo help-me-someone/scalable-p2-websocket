@@ -101,6 +101,8 @@ async function getUserLike(videoID, userID) {
 async function handleVideo(socket, info) {
   socket.join(info.video+'room');
 
+  // console.log("Socket joined room:", info.video+'room');
+
   // Serve the view count.
   handleVideoViewCount(info);
 }
@@ -126,7 +128,7 @@ async function handleVideoViewCount(info) {
     await redisClient.set(videoKey, value, { EX: expiryTime * 2 });
   }
   
-  console.log("Value: ", value);
+  // console.log("Value: ", value);
   
   io.to(info.video+'room').emit("update", { 'room':info.video, 'value':value });
 }
@@ -159,7 +161,7 @@ async function createVideoNotification(connection, info) {
   // Collect all participants and notify all of them.
   const participants = await getNotificationParticipants(connection, info.vid);
   await Promise.all(
-    participants.map(async (p) => {
+    participants.filter(p => p.user_id != info.uid).map(async (p) => {
       const user = await getUser(connection, p.user_id);
       const username = user.username;
       const actionMessage = `${actorUsername} ${action} '${video.name}'`
@@ -176,7 +178,7 @@ async function createVideoNotification(connection, info) {
         id: notifID,
       };
 
-      console.log("Sending notif: ", username, message.message);
+      // console.log("Sending notif: ", username, message.message);
       io.to(username).emit("updateNotifications", {count: 1, notifications: [message]});
     })
   );
@@ -186,7 +188,7 @@ async function handleVideoLikeToggle(info) {
   const connection = await getMySQLConnection();
   const userLike = await getUserLike(info.videoID, info.userID);
 
-  console.log(userLike);
+  // console.log(userLike);
 
   if (userLike.length == 0) 
   {
@@ -232,11 +234,9 @@ async function handleVideoLikeCount(info) {
     await handleVideoLikeCount(info);
     return;
   }
-
-  console.log("Sending back like count:", value);
   
   const room = info.videoKey+'room';
-  io.to(room).emit("like", { 'room':room, 'value':value });
+  io.to(room).emit("like", { 'key':info.videoKey, 'room':room, 'value':value });
 }
 
 async function getUser(connection, uid) {
@@ -253,11 +253,11 @@ async function getNotification(connection, uid, vid, date) {
     LIMIT 1
   `
 
-  console.log("SQL:", sql);
+  // console.log("SQL:", sql);
   
   // ORDER BY video_notifications.id ASC 
   const results = await connection.promise().query(sql)
-  console.log("Got notification:", results[0]);
+  // console.log("Got notification:", results[0]);
   return results[0][0]
 }
 
@@ -284,17 +284,17 @@ async function handleVideoGetComment(socket, info) {
   // After the interval, the value will get updated.
   const expiryTime = 5;
 
-  console.log("HandleVideoComment, videoID: ", info.videoID);
+  // console.log("HandleVideoComment, videoID: ", info.videoID);
 
   // Check whether there is a value cached in the redis.
   const videoKey = info.videoKey+'-comment-key';
   var value = await redisClient.get(videoKey);
 
-  console.log("Print handleVideoComment value: ", value);
+  // console.log("Print handleVideoComment value: ", value);
   
   if (value == null) {
     value = await getVideoComments(info.videoID);
-    console.log("Print handleVideoComment FROM DB value: ", value);
+    // console.log("Print handleVideoComment FROM DB value: ", value);
     
     const connection = await getMySQLConnection();
     
@@ -315,7 +315,7 @@ async function handleVideoGetComment(socket, info) {
 
     value = JSON.stringify(newValue);
 
-    console.log("Comment Value: ", value);
+    // console.log("Comment Value: ", value);
     
     await redisClient.set(videoKey, value, { EX: 2 });
   }
@@ -353,13 +353,13 @@ async function handleReadNotification(socket, info) {
 }
 
 async function processNotification(connection, notif) {
-    console.log("Notif: ", notif);
+    // console.log("Notif: ", notif);
     const user = await getUser(connection, notif.actor_id);
     const video = await getVideo(connection, notif.video_id);
     const videoOwner = await getUser(connection, video.user_id)
 
-    console.log("Video: ", video);
-    console.log("VideoOwner: ", videoOwner);
+    // console.log("Video: ", video);
+    // console.log("VideoOwner: ", videoOwner);
     
     const action = (notif.type == 1) ? " commented on video '" : " liked video '";
     const notifMessage = user.username + action + video.name + "'";
@@ -386,7 +386,7 @@ async function handleGetNotifications(socket, info) {
   const username = info.username;
   const user = await getUserFromUsername(connection, username);
   
-  console.log("user: ", user);
+  // console.log("user: ", user);
   
   const sql = 'SELECT * FROM video_notifications WHERE video_notifications.user_id = ?';
   const result = await connection.promise().query(sql, [ user.id ]);
@@ -394,13 +394,13 @@ async function handleGetNotifications(socket, info) {
   // Array of notif objects.
   const notifs = result[0].filter(n => n.actor_id != n.user_id);
   
-  console.log("Notif: ", notifs);
+  // console.log("Notif: ", notifs);
 
   const processedNotifs = await Promise.all(
     notifs.map(async (notif) => processNotification(connection, notif))
   );
 
-  console.log("Processed Notifs: ", processedNotifs);
+  // console.log("Processed Notifs: ", processedNotifs);
   
   const message = { count: notifs.filter(x => !x.read).length, notifications: processedNotifs };
   
@@ -422,7 +422,7 @@ async function handleGetNotifications(socket, info) {
 async function handlePushNotification(socket, info) {
   const connection = await getMySQLConnection();
 
-  console.log("Notif date: ", info.date);
+  // console.log("Notif date: ", info.date);
 
   // Get the current user.
   const actor = await getUser(connection, info.uid); 
@@ -447,7 +447,7 @@ async function handlePushNotification(socket, info) {
         id: notifID,
       };
 
-      console.log("Sending notif: ", username, message);
+      // console.log("Sending notif: ", username, message);
       io.to(username).emit("updateNotifications", {count: 1, notifications: [message]});
     })
   );
@@ -472,5 +472,5 @@ io.on("connection", (socket) => {
   
 });
 
-console.log("Started server on port 5001.");
+// console.log("Started server on port 5001.");
 httpServer.listen(5001);
