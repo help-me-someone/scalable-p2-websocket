@@ -16,10 +16,10 @@ import { setupWorker } from '@socket.io/sticky';
 import { createAdapter } from "@socket.io/redis-adapter";
 import { Redis } from 'ioredis';
 
-const redisUrl = `redis://${process.env.REDIS_IP}/5`
+const redisClient = createClient({ url: `redis://${process.env.REDIS_IP}/4` });
+const serverRedisClient = new Redis(`redis://${process.env.REDIS_IP}/5`);
 
-const serverRedisClient = new Redis(redisUrl);
-const redisClient = createClient({ url: redisUrl });
+const expiryTime = 8;
 
 // TODO: Move this into multiple files later for better organization.
 console.log("ALLOWED_ORIGIN", process.env.ALLOWED_ORIGIN);
@@ -140,7 +140,6 @@ async function handleJoin(socket, info) {
 async function handleVideoViewCount(socket, info) {
   // Data expiry time. 
   // After the interval, the value will get updated.
-  const expiryTime = 5;
 
   // Check whether there is a value cached in the redis.
   const videoKey = info.video+'key';
@@ -148,7 +147,7 @@ async function handleVideoViewCount(socket, info) {
   
   if (value == null) {
     value = await getViewCount(info.video);
-    await redisClient.set(videoKey, value, { EX: expiryTime * 2 });
+    await redisClient.set(videoKey, value, { EX: expiryTime });
   }
   
   // console.log("Value: ", value);
@@ -246,7 +245,6 @@ async function handleVideoLikeToggle(info) {
 async function handleVideoLikeCount(socket, info) {
   // Data expiry time. 
   // After the interval, the value will get updated.
-  const expiryTime = 5;
 
   // Check whether there is a value cached in the redis.
   const videoKey = info.videoKey+'-like-key';
@@ -254,9 +252,7 @@ async function handleVideoLikeCount(socket, info) {
   
   if (value == null) {
     value = await getLikeCount(info.videoID);
-    await redisClient.set(videoKey, value, { EX: 2 });
-    await handleVideoLikeCount(socket, info);
-    return;
+    await redisClient.set(videoKey, value, { EX: expiryTime });
   }
   const room = info.videoKey+'room';
   const target = (info.to=='user') ? socket : io.to(room);
@@ -306,7 +302,6 @@ function makePrettyDate(date) {
 async function handleVideoGetComment(socket, info) {
   // Data expiry time. 
   // After the interval, the value will get updated.
-  const expiryTime = 5;
 
   // console.log("HandleVideoComment, videoID: ", info.videoID);
 
