@@ -15,13 +15,22 @@ import { createConnection } from 'mysql2';
 import { setupWorker } from '@socket.io/sticky';
 import { createAdapter } from "@socket.io/redis-adapter";
 import { Redis } from 'ioredis';
-const serverRedisClient = new Redis();
+
+const redisUrl = `redis://${process.env.REDIS_IP}/5`
+
+const serverRedisClient = new Redis(redisUrl);
+const redisClient = createClient({ url: redisUrl });
 
 // TODO: Move this into multiple files later for better organization.
-console.log("Allowed Origin:", process.env.ALLOWED_ORIGIN);
+console.log("ALLOWED_ORIGIN", process.env.ALLOWED_ORIGIN);
+console.log("REDIS_IP", process.env.REDIS_IP);
+console.log("DB_IP", process.env.DB_IP);
+console.log("DB_HOST", process.env.DB_HOST);
+console.log("DB_USERNAME", process.env.DB_USERNAME);
+console.log("DB_PASSWORD", process.env.DB_PASSWORD);
 
 // Set up redis client.
-const redisClient = createClient();
+
 redisClient.on('error', err => console.log('Redis Client Error', err))
 await redisClient.connect()
 
@@ -37,11 +46,13 @@ setupWorker(io);
 
 async function getMySQLConnection() {
   var mySqlClient = createConnection({
-    host: "localhost",
-    user: "user",
-    password: "password",
+    host: `${process.env.DB_HOST}`,
+    user: `${process.env.DB_USERNAME}`,
+    password: `${process.env.DB_PASSWORD}`,
     database: "toktik-db"
   });
+
+  createConnection(`mysql://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_IP}/toktik-db?charset=utf8mb4&parseTime=True&loc=Local`);
 
   mySqlClient.connect(function(err) {
     if (err) throw err;
