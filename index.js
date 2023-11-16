@@ -12,7 +12,6 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { createClient } from 'redis';
 import { createConnection } from 'mysql2';
-import { setupWorker } from '@socket.io/sticky';
 import { createAdapter } from "@socket.io/redis-adapter";
 import { Redis } from 'ioredis';
 
@@ -42,7 +41,6 @@ const io = new Server(httpServer, {
  });
 
 io.adapter(createAdapter(serverRedisClient, serverRedisClient.duplicate()));
-setupWorker(io);
 
 async function getMySQLConnection() {
   var mySqlClient = createConnection(`mysql://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_IP}/toktik-db?charset=utf8mb4&parseTime=True&loc=Local`);
@@ -492,3 +490,6 @@ io.on("connection", (socket) => {
   socket.on("readNotification", (info) => handleReadNotification(socket, info));
 });
 
+httpServer.listen(PORT, () =>
+  console.log(`server listening at http://localhost:${PORT}`)
+);

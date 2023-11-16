@@ -6,7 +6,7 @@
   "author": "",
   "license": "MIT",
   "scripts": {
-    "start": "node cluster.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "@socket.io/cluster-adapter": "^0.2.2",
