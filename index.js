@@ -59,6 +59,9 @@ async function getViewCount(videoKey) {
   const sql = 'SELECT videos.views FROM videos WHERE videos.key = ?';
   const results = await connection.promise().query(sql, [videoKey])
   connection.end();
+
+  if (results.length == 0 || results[0].length == 0) return 0;
+  
   return results[0][0].views;  
 }
 
@@ -73,6 +76,7 @@ async function getLikeCount(videoID) {
 
   console.log("getLikeCount returned ", results[0]);
  
+  if (results.length == 0 || results[0].length == 0) return 0;
   return results[0][0]['like_count'];  
 }
 
