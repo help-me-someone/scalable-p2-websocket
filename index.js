@@ -104,7 +104,7 @@ async function handleVideo(socket, info) {
   // console.log("Socket joined room:", info.video+'room');
 
   // Serve the view count.
-  handleVideoViewCount(info);
+  handleVideoViewCount(socket, info);
 }
 
 // Input:
@@ -114,7 +114,7 @@ async function handleJoin(socket, info) {
   socket.join(info.room);
 }
 
-async function handleVideoViewCount(info) {
+async function handleVideoViewCount(socket, info) {
   // Data expiry time. 
   // After the interval, the value will get updated.
   const expiryTime = 5;
@@ -129,8 +129,9 @@ async function handleVideoViewCount(info) {
   }
   
   // console.log("Value: ", value);
+  const target = (info.to=='user') ? socket : io.to(info.video+'room');
   
-  io.to(info.video+'room').emit("update", { 'room':info.video, 'value':value });
+  target.emit("update", { 'room':info.video, 'value':value });
 }
 
 // INPUT
@@ -219,7 +220,7 @@ async function handleVideoLikeToggle(info) {
   connection.end();
 }
 
-async function handleVideoLikeCount(info) {
+async function handleVideoLikeCount(socket, info) {
   // Data expiry time. 
   // After the interval, the value will get updated.
   const expiryTime = 5;
@@ -231,12 +232,12 @@ async function handleVideoLikeCount(info) {
   if (value == null) {
     value = await getLikeCount(info.videoID);
     await redisClient.set(videoKey, value, { EX: 2 });
-    await handleVideoLikeCount(info);
+    await handleVideoLikeCount(socket, info);
     return;
   }
-  
   const room = info.videoKey+'room';
-  io.to(room).emit("like", { 'key':info.videoKey, 'room':room, 'value':value });
+  const target = (info.to=='user') ? socket : io.to(room);
+  target.emit("like", { 'key':info.videoKey, 'room':room, 'value':value });
 }
 
 async function getUser(connection, uid) {
@@ -459,8 +460,8 @@ io.on("connection", (socket) => {
   // Client requesting for view count of a particular video.
   socket.on("video", (info) => handleVideo(socket, info));
   socket.on("join", (info) => handleJoin(socket, info));
-  socket.on('getNewViewCount', (info) => handleVideoViewCount(info));
-  socket.on('getNewLikeCount', (info) => handleVideoLikeCount(info));
+  socket.on('getNewViewCount', (info) => handleVideoViewCount(socket, info));
+  socket.on('getNewLikeCount', (info) => handleVideoLikeCount(socket, info));
   socket.on('getVideoComments', (info) => handleVideoGetComment(socket, info));
   socket.on('getNotifications', (info) => handleGetNotifications(socket, info));
   
