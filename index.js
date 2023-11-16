@@ -45,14 +45,7 @@ io.adapter(createAdapter(serverRedisClient, serverRedisClient.duplicate()));
 setupWorker(io);
 
 async function getMySQLConnection() {
-  var mySqlClient = createConnection({
-    host: `${process.env.DB_HOST}`,
-    user: `${process.env.DB_USERNAME}`,
-    password: `${process.env.DB_PASSWORD}`,
-    database: "toktik-db"
-  });
-
-  createConnection(`mysql://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_IP}/toktik-db?charset=utf8mb4&parseTime=True&loc=Local`);
+  var mySqlClient = createConnection(`mysql://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_IP}/toktik-db?charset=utf8mb4&parseTime=True&loc=Local`);
 
   mySqlClient.connect(function(err) {
     if (err) throw err;
