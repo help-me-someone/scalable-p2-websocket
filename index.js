@@ -1,14 +1,24 @@
+/**
+ * Required ENV.
+ * - CORS_ORIGIN
+ * - REDIS_IP
+ * - MYSQL_IP
+ * - MYSQL_HOST
+ * - DB_USERNAME
+ * - DB_PASSWORD
+ */
+
 import { createServer } from "http"; 
 import { Server } from "socket.io";
 import { createClient } from 'redis';
 import { createConnection } from 'mysql2';
 import { setupWorker } from '@socket.io/sticky';
 import { createAdapter } from "@socket.io/redis-adapter";
-
 import { Redis } from 'ioredis';
 const serverRedisClient = new Redis();
 
 // TODO: Move this into multiple files later for better organization.
+console.log("Allowed Origin:", process.env.ALLOWED_ORIGIN);
 
 // Set up redis client.
 const redisClient = createClient();
@@ -18,7 +28,7 @@ await redisClient.connect()
 const httpServer = createServer();
 const io = new Server(httpServer, { 
     cors: {
-      origin: "http://localhost:8000",
+      origin: process.env.ALLOWED_ORIGIN,
     },
  });
 

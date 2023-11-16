@@ -1,4 +1,4 @@
-import cluster from "cluster";
+import cluster from "node:cluster";
 import http from "http";
 import { setupMaster } from "@socket.io/sticky";
 
@@ -28,5 +28,5 @@ if (cluster.isMaster) {
   );
 } else {
   console.log(`Worker ${process.pid} started`);
-  import("./index.js");
+  // import("./index.js");
 }
