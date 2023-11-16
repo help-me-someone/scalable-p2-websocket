@@ -20,6 +20,8 @@ const serverRedisClient = new Redis(`redis://${process.env.REDIS_IP}/5`);
 
 const expiryTime = 8;
 
+const PORT = 5001;
+
 // TODO: Move this into multiple files later for better organization.
 console.log("ALLOWED_ORIGIN", process.env.ALLOWED_ORIGIN);
 console.log("REDIS_IP", process.env.REDIS_IP);
