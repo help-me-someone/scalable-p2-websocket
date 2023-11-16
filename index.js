@@ -245,7 +245,7 @@ async function handleVideoLikeToggle(info) {
 async function handleVideoLikeCount(socket, info) {
   // Data expiry time. 
   // After the interval, the value will get updated.
-
+  console.log("to:", info.to);
   // Check whether there is a value cached in the redis.
   const videoKey = info.videoKey+'-like-key';
   var value = await redisClient.get(videoKey);
