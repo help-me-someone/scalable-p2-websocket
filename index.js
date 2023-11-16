@@ -65,10 +65,13 @@ async function getViewCount(videoKey) {
 async function getLikeCount(videoID) {
   const connection = await getMySQLConnection();
 
+  console.log("Getting like count of video ID: ", videoID);
   // // Get the like count.
   const sql = 'SELECT COUNT(*) AS like_count FROM video_likes WHERE video_likes.video_id = ? AND video_likes.like = true';
   const results = await connection.promise().query(sql, [videoID])
   connection.end();
+
+  console.log("getLikeCount returned ", results[0]);
  
   return results[0][0]['like_count'];  
 }
@@ -252,7 +255,12 @@ async function handleVideoLikeCount(socket, info) {
   
   if (value == null) {
     value = await getLikeCount(info.videoID);
+    console.log("Got value from DB: ", value);
     await redisClient.set(videoKey, value, { EX: expiryTime });
+  }
+  else
+  {
+    console.log("Got value from redis: ", value);
   }
   const room = info.videoKey+'room';
   const target = (info.to=='user') ? socket : io.to(room);
