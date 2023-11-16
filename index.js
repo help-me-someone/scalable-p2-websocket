@@ -1,6 +1,12 @@
-import { createServer } from "http"; import { Server } from "socket.io";
+import { createServer } from "http"; 
+import { Server } from "socket.io";
 import { createClient } from 'redis';
 import { createConnection } from 'mysql2';
+import { setupWorker } from '@socket.io/sticky';
+import { createAdapter } from "@socket.io/redis-adapter";
+
+import { Redis } from 'ioredis';
+const serverRedisClient = new Redis();
 
 // TODO: Move this into multiple files later for better organization.
 
@@ -15,6 +21,9 @@ const io = new Server(httpServer, {
       origin: "http://localhost:8000",
     },
  });
+
+io.adapter(createAdapter(serverRedisClient, serverRedisClient.duplicate()));
+setupWorker(io);
 
 async function getMySQLConnection() {
   var mySqlClient = createConnection({
@@ -457,6 +466,8 @@ async function handlePushNotification(socket, info) {
 }
 
 io.on("connection", (socket) => {
+  console.log("Connected: ", process.pid);
+  
   // Client requesting for view count of a particular video.
   socket.on("video", (info) => handleVideo(socket, info));
   socket.on("join", (info) => handleJoin(socket, info));
@@ -470,8 +481,5 @@ io.on("connection", (socket) => {
   socket.on('videoLikeToggle', (info) => handleVideoLikeToggle(info));
   socket.on('newComment', (info) => handleNewComment(socket, info));
   socket.on("readNotification", (info) => handleReadNotification(socket, info));
-  
 });
 
-// console.log("Started server on port 5001.");
-httpServer.listen(5001);
